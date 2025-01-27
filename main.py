@@ -1,6 +1,12 @@
+# this is used to disable python formatting on save
+# fmt: off
+
 class ECSimulator():
     def __init__(self):
         self.ECMap = dict()
+        self.voteResults = [0, 0]
+        self.candidateOne = ""
+        self.candidateTwo = ""
 
     def displayMenu(self):
         option = 0
@@ -15,7 +21,7 @@ class ECSimulator():
             option = int(input('Enter the option: '))
 
             if option == 1:
-                print('\nRunning simulator...')
+                self.runSim()
 
             elif option == 2:
                 newStateName = input('\nEnter new state name: ')
@@ -29,12 +35,33 @@ class ECSimulator():
                 print('\nGoodbye!')
                 exit()
             else:
-                print('\nerror! enter the correct input')
+                print('\nError! Enter the correct input')
+
+    def runSim(self):
+        print('\nRunning simulator...')
+
+        self.candidateOne = input("\nEnter the name for candidate one: ")
+        self.candidateTwo = input("Enter the name for candidate two: ")
+
+        print("\nWho won each state?")
+        print(f"Enter 1 ({self.candidateOne}) or 2 ({self.candidateTwo}).\n")
+        choice = 0
+        for state, stateECVoteCnt in self.ECMap.items():
+            choice = int(input(f"\tWho won {state} ({stateECVoteCnt}): "))
+
+            # candidate 1
+            if choice == 1:
+                self.voteResults[0] = self.voteResults[0] + stateECVoteCnt
+            # candidate 2
+            if choice == 2:
+                self.voteResults[1] = self.voteResults[1] + stateECVoteCnt
+
+        # display election results
+        self.printElectionResults()
 
     def addNewState(self, newStateName_p, newStateECVoteCnt_p):
         self.ECMap[newStateName_p] = newStateECVoteCnt_p
-        print(f'\n{newStateName_p} has been added with {
-              newStateECVoteCnt_p} votes.')
+        print(f'\n{newStateName_p} has been added with {newStateECVoteCnt_p} votes.')
         self.displayMenu()
 
     def displayECMap(self):
@@ -44,6 +71,27 @@ class ECSimulator():
             print(f'\t{stateCount}. {state} ({stateECVoteCnt})')
             stateCount += 1
         self.displayMenu()
+
+    def printElectionResults(self):
+        # determine either candidate (cand 1 or cand2) has won at least 270 EC votes
+        if self.voteResults[0] < 270 or self.voteResults[1] < 270:
+            print("\nNeither candidate has achieved at least 270 votes! The House of Representatives will vote on the winner.")
+
+            print(f"\n{self.candidateOne} has won {self.voteResults[0]} votes.")
+            print(f"{self.candidateTwo} has won {self.voteResults[1]} votes.")
+            return
+
+        # print election results
+        print("\nElection results: ")
+        print(f"{self.candidateOne} has won {self.voteResults[0]} votes.")
+        print(f"{self.candidateTwo} has won {self.voteResults[1]} votes.")
+
+        # display who won the election
+        if self.voteResults[0] > self.voteResults[1]:
+            print("\n{self.candidateOne} has won the election!")
+        if self.voteResults[1] > self.voteResults[0]:
+            print("\n{self.candidateTwo} has won the election!")
+
 
 
 def main():
