@@ -1,6 +1,8 @@
 # this is used to disable python formatting on save
 # fmt: off
 
+import json
+
 class ECSimulator():
     def __init__(self):
         self.ECMap = dict()
@@ -9,6 +11,8 @@ class ECSimulator():
         self.candidateTwo = ""
 
     def displayMenu(self):
+        self.extractECMap()
+
         option = 0
 
         while (option != 3):
@@ -92,14 +96,24 @@ class ECSimulator():
         if self.voteResults[1] > self.voteResults[0]:
             print("\n{self.candidateTwo} has won the election!")
 
+    def extractECMap(self):
+        # read ElectoralMap.json file
+        file = open("ElectoralMap.json", "r")
+        data = json.load(file)
 
+        if isinstance(data, dict):
+            # loop through ElectoralMap.json dict
+            for states, ECMapJSONFile in data.items():
+
+                # loop through ElectoralMap.json list:
+                for ECMapJSON in ECMapJSONFile:
+                    self.ECMap[ECMapJSON["state"]] = ECMapJSON["electoral_votes"]
 
 def main():
     sim = ECSimulator()
     print('Welcome to the Presidential College Vote Simulator!')
 
     sim.displayMenu()
-
 
 if __name__ == "__main__":
     main()
