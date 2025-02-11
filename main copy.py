@@ -1,10 +1,29 @@
 # this is used to disable python formatting on save
 # fmt: off
 
-# ENTER "python3.9 main.py" to run simulator
+from flask import Flask, jsonify
+from flask_pymongo import PyMongo
+from pymongo import MongoClient
+import json, requests
 
-import requests
-import json
+# ENTER "flask --app main run" to run Flask server
+app = Flask(__name__)
+
+# MongoDB connection
+app.config["MONGO_URI"] = "mongodb+srv://bryanchan:snhu-cs499@snhu-cs499.6oodr.mongodb.net/"
+
+client = MongoClient("mongodb+srv://bryanchan:snhu-cs499@snhu-cs499.6oodr.mongodb.net/")
+db = client["electoral-college-simulator"]
+collection = db["ECMap"]
+mongo = PyMongo(app)
+
+@app.route('/api', methods=['GET'])
+def fetch_ECMap():
+    # fetch data from ECMap in MongoDB
+    # db = "electoral-map-simulator"
+    # collection = mongo.db.ECMap
+    data = list(collection.find({}, {"id": 0}))
+    return jsonify(data)
 
 class ECSimulator():
     def __init__(self):
@@ -14,15 +33,6 @@ class ECSimulator():
         self.candidateTwo = ""
 
     def displayMenu(self):
-        """
-        desc: 
-            Displays menu prompt
-        args:
-            n/a
-        returns:
-            n/a
-        """
-
         self.extractECMap()
 
         option = 0
@@ -40,7 +50,11 @@ class ECSimulator():
                 self.runSim()
 
             elif option == 2:
-                self.addNewState()
+                newStateName = input('\nEnter new state name: ')
+                newStateECVoteCnt = int(
+                    input(f'Enter the number of electoral votes for {newStateName}: '))
+
+                self.addNewState(newStateName, newStateECVoteCnt)
             elif option == 3:
                 self.displayECMap()
             elif option == 4:
@@ -50,15 +64,6 @@ class ECSimulator():
                 print('\nError! Enter the correct input')
 
     def runSim(self):
-        """
-        desc: 
-            Starts the simulator
-        args:
-            n/a
-        returns:
-            n/a
-        """
-
         print('\nRunning simulator...')
 
         self.candidateOne = input("\nEnter the name for candidate one: ")
@@ -66,7 +71,6 @@ class ECSimulator():
 
         print("\nWho won each state?")
         print(f"Enter 1 ({self.candidateOne}) or 2 ({self.candidateTwo}).\n")
-
         choice = 0
         for state, stateECVoteCnt in self.ECMap.items():
             choice = int(input(f"\tWho won {state} ({stateECVoteCnt}): "))
@@ -81,54 +85,20 @@ class ECSimulator():
         # display election results
         self.printElectionResults()
 
-    def addNewState(self):
-        """
-        desc: 
-            allows the user to add a new state to ECMap
-        args:
-            n/a
-        returns:
-            n/a
-        """
-        newStateName = input('\nEnter new state name: ')
-        newStateECVoteCnt = int(
-            input(f'Enter the number of electoral votes for {newStateName}: '))
-
-        self.ECMap[newStateName] = newStateECVoteCnt
-
-        print(f'\n{newStateName} has been added with {newStateECVoteCnt} votes.')
-
+    def addNewState(self, newStateName_p, newStateECVoteCnt_p):
+        self.ECMap[newStateName_p] = newStateECVoteCnt_p
+        print(f'\n{newStateName_p} has been added with {newStateECVoteCnt_p} votes.')
         self.displayMenu()
 
     def displayECMap(self):
-        """
-        desc: 
-            shows contents of electoral college map
-        args:
-            n/a
-        returns:
-            n/a
-        """
-
-        print('\nDisplaying EC map: ')
         stateCount = 1
-
+        print('\nDisplaying EC map: ')
         for state, stateECVoteCnt in self.ECMap.items():
             print(f'\t{stateCount}. {state} ({stateECVoteCnt})')
             stateCount += 1
-
         self.displayMenu()
 
     def printElectionResults(self):
-        """
-        desc: 
-            prints election results in a formatted manner
-        args:
-            n/a
-        returns:
-            n/a
-        """
-
         # determine either candidate (cand 1 or cand2) has won at least 270 EC votes
         if self.voteResults[0] < 270 or self.voteResults[1] < 270:
             print("\nNeither candidate has achieved at least 270 votes! The House of Representatives will vote on the winner.")
@@ -148,33 +118,43 @@ class ECSimulator():
         if self.voteResults[1] > self.voteResults[0]:
             print("\n{self.candidateTwo} has won the election!")
 
-    def extractECMap(self):
-        """
-        desc: 
-            makes a GET request to MongoDB, and extracts contents of statesList into ECMap dictionary (hash map)
-        args:
-            n/a
-        returns:
-            n/a
-        """
 
-        # make GET request to MongoDB
+
+
+
+    def extractECMap(self):
+        # read ElectoralMap.json file
+        # file = open("ElectoralMap.json", "r")
+        # data = json.load(file)
+
         extractECMapURL = "http://127.0.0.1:5000/api"
         res = requests.get(extractECMapURL)
 
-        # error handling
+        # temp error handling
         if res.status_code == 200:
-            data = res.json()  # list
-
-            # formats contents of res into list (array) format
-            statesList = data[0]["states"]
-
-            # extracts contents of statesList into ECMap dictionary (hash map)
-            for state in statesList:
-                self.ECMap[state["state"]] = state["electoral_votes"]
+            print(res.json())
         else:
             print('Error: ', res.status_code)
 
+        # data = 
+        # for states, ECMapJSONFile in data.items():
+
+        #     # loop through ElectoralMap.json list:
+        #     for ECMapJSON in ECMapJSONFile:
+        #         self.ECMap[ECMapJSON["state"]] = ECMapJSON["electoral_votes"]
+
+    # def extractECMap(self):
+    #     # read ElectoralMap.json file
+    #     file = open("ElectoralMap.json", "r")
+    #     data = json.load(file)
+
+    #     if isinstance(data, dict):
+    #         # loop through ElectoralMap.json dict
+    #         for states, ECMapJSONFile in data.items():
+
+    #             # loop through ElectoralMap.json list:
+    #             for ECMapJSON in ECMapJSONFile:
+    #                 self.ECMap[ECMapJSON["state"]] = ECMapJSON["electoral_votes"]
 
 def main():
     sim = ECSimulator()
@@ -183,5 +163,5 @@ def main():
     sim.displayMenu()
 
 if __name__ == "__main__":
-    # app.run(port=8000, debug=True)  # use port 8000 for the server in order to work
+    app.run(port=8000, debug=True)  # use port 8000 for the server in order to work
     main()
